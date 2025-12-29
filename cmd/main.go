@@ -35,7 +35,7 @@ func main() {
 	flag.Parse()
 
 	if *version {
-		fmt.Println("youtube-transcript-api (Go version), version 1.0.0")
+		fmt.Println("youtube-transcript-api (Go version), version", yt_transcript_api.Version)
 		os.Exit(0)
 	}
 
