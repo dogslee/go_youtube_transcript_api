@@ -35,33 +35,78 @@ go get github.com/dogslee/youtube_transcript_api
 
 ### 安装命令行工具
 
-使用 `go install` 安装命令行工具：
+#### 方式一：使用自定义名称构建（推荐）
+
+使用自定义可执行文件名进行构建和安装：
+
+```bash
+# 克隆仓库
+git clone https://github.com/dogslee/youtube_transcript_api.git
+cd youtube_transcript_api
+
+# 构建并安装（使用自定义名称）
+go build -o youtube-transcript-api ./cmd
+sudo mv youtube-transcript-api /usr/local/bin/
+
+# 或者安装到本地 bin 目录
+go build -o ~/go/bin/youtube-transcript-api ./cmd
+```
+
+安装完成后，确保 `/usr/local/bin` 或 `~/go/bin` 在您的 `PATH` 环境变量中，然后就可以使用：
+
+```bash
+youtube-transcript-api dQw4w9WgXcQ
+```
+
+#### 方式二：使用 go install（配合别名）
+
+使用 `go install` 安装并创建别名：
 
 ```bash
 go install github.com/dogslee/youtube_transcript_api/cmd@latest
+
+# 创建别名（添加到 ~/.bashrc、~/.zshrc 等）
+alias youtube-transcript-api='cmd'
+
+# 或者创建符号链接
+ln -s $(go env GOPATH)/bin/cmd $(go env GOPATH)/bin/youtube-transcript-api
 ```
 
-**说明：**
-- 安装路径：`github.com/dogslee/youtube_transcript_api/cmd`
-- 安装后的可执行文件名：`cmd`（位于 `$GOPATH/bin` 或 `$HOME/go/bin` 目录）
-- 如需自定义可执行文件名，可以使用别名或创建符号链接
+#### 方式三：使用安装脚本（最简单）
 
-安装完成后，确保 `$GOPATH/bin` 或 `$HOME/go/bin` 在您的 `PATH` 环境变量中，然后就可以直接使用：
+使用提供的安装脚本：
 
 ```bash
-cmd dQw4w9WgXcQ
+# 克隆仓库
+git clone https://github.com/dogslee/youtube_transcript_api.git
+cd youtube_transcript_api
+
+# 运行安装脚本
+./install.sh
+
+# 或者安装到自定义目录
+INSTALL_DIR=~/bin ./install.sh
 ```
+
+脚本会自动：
+- 使用正确的名称（`youtube-transcript-api`）构建二进制文件
+- 安装到合适的目录
+- 检查目录是否在 PATH 中
+- 如果需要更新 PATH，会提供说明
 
 **卸载方式：**
-如需卸载命令行工具，直接删除对应的二进制文件即可：
+
+如需卸载命令行工具：
 
 ```bash
-# 删除安装的二进制文件
+# 如果通过方式一安装
+sudo rm /usr/local/bin/youtube-transcript-api
+# 或者
+rm ~/go/bin/youtube-transcript-api
+
+# 如果通过方式二安装
 rm $(go env GOPATH)/bin/cmd
-# 或者如果设置了 GOBIN
-rm $(go env GOBIN)/cmd
-# 或者默认位置
-rm ~/go/bin/cmd
+rm $(go env GOPATH)/bin/youtube-transcript-api  # 如果创建了符号链接
 ```
 
 ## 使用示例
@@ -163,51 +208,73 @@ textOutput, _ := textFormatter.FormatTranscript(transcript)
 
 ### 安装方式
 
-**方式一：使用 go install（推荐）**
+**方式一：使用自定义名称构建（推荐）**
+
+使用自定义可执行文件名进行构建和安装：
+
+```bash
+# 克隆仓库
+git clone https://github.com/dogslee/youtube_transcript_api.git
+cd youtube_transcript_api
+
+# 构建并安装
+go build -o youtube-transcript-api ./cmd
+sudo mv youtube-transcript-api /usr/local/bin/
+
+# 或者安装到本地 bin 目录
+go build -o ~/go/bin/youtube-transcript-api ./cmd
+```
+
+**方式二：使用 go install（配合别名）**
+
+使用 `go install` 安装并创建别名或符号链接：
 
 ```bash
 go install github.com/dogslee/youtube_transcript_api/cmd@latest
+
+# 创建别名（添加到 ~/.bashrc、~/.zshrc 等）
+alias youtube-transcript-api='cmd'
+
+# 或者创建符号链接
+ln -s $(go env GOPATH)/bin/cmd $(go env GOPATH)/bin/youtube-transcript-api
 ```
 
-安装路径说明：
-- 模块路径：`github.com/dogslee/youtube_transcript_api/cmd`
-- 安装后的可执行文件名：`cmd`
-- 安装位置：`$GOPATH/bin/cmd` 或 `$HOME/go/bin/cmd`
+**方式三：使用安装脚本（最简单）**
 
-**方式二：手动编译**
+使用提供的安装脚本：
 
 ```bash
-cd cmd
-go build -o youtube-transcript-api
-```
+# 克隆仓库
+git clone https://github.com/dogslee/youtube_transcript_api.git
+cd youtube_transcript_api
 
-编译后的可执行文件在当前目录，可以移动到系统 PATH 目录或直接使用。
+# 运行安装脚本
+./install.sh
+
+# 或者安装到自定义目录
+INSTALL_DIR=~/bin ./install.sh
+```
 
 ### 使用示例
 
-**注意：** 如果使用 `go install` 安装，可执行文件名为 `cmd`；如果手动编译并指定了名称，则使用编译后的文件名。
-
 ```bash
-# 获取字幕（使用 go install 安装后）
-cmd dQw4w9WgXcQ
-
-# 或者（手动编译后，使用自定义名称）
+# 获取字幕
 youtube-transcript-api dQw4w9WgXcQ
 
 # 列出可用字幕
-cmd --list-transcripts dQw4w9WgXcQ
+youtube-transcript-api --list-transcripts dQw4w9WgXcQ
 
 # 指定语言
-cmd --languages "en zh" dQw4w9WgXcQ
+youtube-transcript-api --languages "en zh" dQw4w9WgXcQ
 
 # 指定输出格式
-cmd --format json dQw4w9WgXcQ
+youtube-transcript-api --format json dQw4w9WgXcQ
 
 # 翻译字幕
-cmd --translate zh dQw4w9WgXcQ
+youtube-transcript-api --translate zh dQw4w9WgXcQ
 
 # 使用代理
-cmd --http-proxy "http://proxy.example.com:8080" dQw4w9WgXcQ
+youtube-transcript-api --http-proxy "http://proxy.example.com:8080" dQw4w9WgXcQ
 ```
 
 ## API 文档

@@ -35,33 +35,78 @@ go get github.com/dogslee/youtube_transcript_api
 
 ### Install Command-Line Tool
 
-Install the command-line tool using `go install`:
+#### Method 1: Build with Custom Name (Recommended)
+
+Build and install with a custom executable name:
+
+```bash
+# Clone the repository
+git clone https://github.com/dogslee/youtube_transcript_api.git
+cd youtube_transcript_api
+
+# Build and install with custom name
+go build -o youtube-transcript-api ./cmd
+sudo mv youtube-transcript-api /usr/local/bin/
+
+# Or install to your local bin directory
+go build -o ~/go/bin/youtube-transcript-api ./cmd
+```
+
+After installation, ensure that `/usr/local/bin` or `~/go/bin` is in your `PATH` environment variable, then you can use it:
+
+```bash
+youtube-transcript-api dQw4w9WgXcQ
+```
+
+#### Method 2: Using go install (with alias)
+
+Install using `go install` and create an alias:
 
 ```bash
 go install github.com/dogslee/youtube_transcript_api/cmd@latest
+
+# Create an alias (add to your ~/.bashrc, ~/.zshrc, etc.)
+alias youtube-transcript-api='cmd'
+
+# Or create a symbolic link
+ln -s $(go env GOPATH)/bin/cmd $(go env GOPATH)/bin/youtube-transcript-api
 ```
 
-**Notes:**
-- Installation path: `github.com/dogslee/youtube_transcript_api/cmd`
-- Executable name after installation: `cmd` (located in `$GOPATH/bin` or `$HOME/go/bin`)
-- To use a custom executable name, you can use an alias or create a symbolic link
+#### Method 3: Using Install Script (Easiest)
 
-After installation, ensure that `$GOPATH/bin` or `$HOME/go/bin` is in your `PATH` environment variable, then you can use it directly:
+Use the provided install script:
 
 ```bash
-cmd dQw4w9WgXcQ
+# Clone the repository
+git clone https://github.com/dogslee/youtube_transcript_api.git
+cd youtube_transcript_api
+
+# Run the install script
+./install.sh
+
+# Or install to a custom directory
+INSTALL_DIR=~/bin ./install.sh
 ```
+
+The script will:
+- Build the binary with the proper name (`youtube-transcript-api`)
+- Install it to the appropriate directory
+- Check if the directory is in your PATH
+- Provide instructions if PATH needs to be updated
 
 **Uninstallation:**
-To uninstall the command-line tool, simply delete the corresponding binary file:
+
+To uninstall the command-line tool:
 
 ```bash
-# Delete the installed binary file
+# If installed via Method 1
+sudo rm /usr/local/bin/youtube-transcript-api
+# Or
+rm ~/go/bin/youtube-transcript-api
+
+# If installed via Method 2
 rm $(go env GOPATH)/bin/cmd
-# Or if GOBIN is set
-rm $(go env GOBIN)/cmd
-# Or default location
-rm ~/go/bin/cmd
+rm $(go env GOPATH)/bin/youtube-transcript-api  # if symlink was created
 ```
 
 ## Usage Examples
@@ -163,51 +208,57 @@ textOutput, _ := textFormatter.FormatTranscript(transcript)
 
 ### Installation Methods
 
-**Method 1: Using go install (Recommended)**
+**Method 1: Build with Custom Name (Recommended)**
+
+Build and install with a custom executable name:
+
+```bash
+# Clone the repository
+git clone https://github.com/dogslee/youtube_transcript_api.git
+cd youtube_transcript_api
+
+# Build and install
+go build -o youtube-transcript-api ./cmd
+sudo mv youtube-transcript-api /usr/local/bin/
+
+# Or install to your local bin directory
+go build -o ~/go/bin/youtube-transcript-api ./cmd
+```
+
+**Method 2: Using go install (with alias)**
+
+Install using `go install` and create an alias or symbolic link:
 
 ```bash
 go install github.com/dogslee/youtube_transcript_api/cmd@latest
+
+# Create an alias (add to your ~/.bashrc, ~/.zshrc, etc.)
+alias youtube-transcript-api='cmd'
+
+# Or create a symbolic link
+ln -s $(go env GOPATH)/bin/cmd $(go env GOPATH)/bin/youtube-transcript-api
 ```
-
-Installation path information:
-- Module path: `github.com/dogslee/youtube_transcript_api/cmd`
-- Executable name after installation: `cmd`
-- Installation location: `$GOPATH/bin/cmd` or `$HOME/go/bin/cmd`
-
-**Method 2: Manual Build**
-
-```bash
-cd cmd
-go build -o youtube-transcript-api
-```
-
-The compiled executable is in the current directory and can be moved to a system PATH directory or used directly.
 
 ### Usage Examples
 
-**Note:** If installed using `go install`, the executable name is `cmd`; if manually compiled with a custom name, use the compiled filename.
-
 ```bash
-# Fetch transcript (after installation with go install)
-cmd dQw4w9WgXcQ
-
-# Or (after manual build with custom name)
+# Fetch transcript
 youtube-transcript-api dQw4w9WgXcQ
 
 # List available transcripts
-cmd --list-transcripts dQw4w9WgXcQ
+youtube-transcript-api --list-transcripts dQw4w9WgXcQ
 
 # Specify languages
-cmd --languages "en zh" dQw4w9WgXcQ
+youtube-transcript-api --languages "en zh" dQw4w9WgXcQ
 
 # Specify output format
-cmd --format json dQw4w9WgXcQ
+youtube-transcript-api --format json dQw4w9WgXcQ
 
 # Translate transcript
-cmd --translate zh dQw4w9WgXcQ
+youtube-transcript-api --translate zh dQw4w9WgXcQ
 
 # Use proxy
-cmd --http-proxy "http://proxy.example.com:8080" dQw4w9WgXcQ
+youtube-transcript-api --http-proxy "http://proxy.example.com:8080" dQw4w9WgXcQ
 ```
 
 ## API Documentation
