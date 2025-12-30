@@ -76,3 +76,4 @@ else
     echo -e "${GREEN}export PATH=\"\$PATH:$INSTALL_DIR\"${NC}"
 fi
 
+

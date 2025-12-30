@@ -23,11 +23,13 @@ type FetchedTranscriptSnippet struct {
 
 // FetchedTranscript 表示一个完整的已获取字幕
 type FetchedTranscript struct {
+	Title        string // 视频标题
+	ThumbnailURL string // 视频封面URL
 	Snippets     []FetchedTranscriptSnippet
-	VideoID      string
-	Language     string
-	LanguageCode string
-	IsGenerated  bool
+	VideoID      string // 视频ID
+	Language     string // 字幕语言
+	LanguageCode string // 字幕语言代码
+	IsGenerated  bool   // 是否是自动生成的字幕
 }
 
 // ToRawData 转换为原始数据格式（用于 JSON 序列化）
@@ -54,6 +56,8 @@ type Transcript struct {
 	httpClient              *HTTPClient
 	VideoID                 string
 	url                     string
+	Title                   string
+	ThumbnailURL            string
 	Language                string
 	LanguageCode            string
 	IsGenerated             bool
@@ -65,6 +69,8 @@ type Transcript struct {
 func NewTranscript(
 	httpClient *HTTPClient,
 	videoID string,
+	title string,
+	thumbnailURL string,
 	url string,
 	language string,
 	languageCode string,
@@ -79,6 +85,8 @@ func NewTranscript(
 	return &Transcript{
 		httpClient:              httpClient,
 		VideoID:                 videoID,
+		Title:                   title,
+		ThumbnailURL:            thumbnailURL,
 		url:                     url,
 		Language:                language,
 		LanguageCode:            languageCode,
@@ -123,6 +131,8 @@ func (t *Transcript) Fetch(preserveFormatting bool) (*FetchedTranscript, error) 
 	}
 
 	return &FetchedTranscript{
+		Title:        t.Title,
+		ThumbnailURL: t.ThumbnailURL,
 		Snippets:     snippets,
 		VideoID:      t.VideoID,
 		Language:     t.Language,
@@ -148,6 +158,8 @@ func (t *Transcript) Translate(languageCode string) (*Transcript, error) {
 	return NewTranscript(
 		t.httpClient,
 		t.VideoID,
+		t.Title,
+		t.ThumbnailURL,
 		translatedURL,
 		translatedLanguage,
 		languageCode,
@@ -189,7 +201,7 @@ func NewTranscriptList(
 }
 
 // BuildTranscriptList 从 JSON 数据构建 TranscriptList
-func BuildTranscriptList(httpClient *HTTPClient, videoID string, captionsJSON map[string]interface{}) (*TranscriptList, error) {
+func BuildTranscriptList(httpClient *HTTPClient, videoID string, videoDetailsJSON map[string]interface{}, captionsJSON map[string]interface{}) (*TranscriptList, error) {
 	// 解析翻译语言
 	var translationLanguages []TranslationLanguage
 	if translationLangs, ok := captionsJSON["translationLanguages"].([]interface{}); ok {
@@ -263,6 +275,8 @@ func BuildTranscriptList(httpClient *HTTPClient, videoID string, captionsJSON ma
 				transcriptDict[languageCode] = NewTranscript(
 					httpClient,
 					videoID,
+					videoDetailsJSON["title"].(string),
+					fmt.Sprintf(ThumbnailURLTemplate, videoID),
 					baseURL,
 					languageName,
 					languageCode,
@@ -387,31 +401,31 @@ func NewTranscriptListFetcher(httpClient *HTTPClient, proxyConfig ProxyConfig) *
 
 // Fetch 获取视频的字幕列表
 func (tlf *TranscriptListFetcher) Fetch(videoID string) (*TranscriptList, error) {
-	captionsJSON, err := tlf.fetchCaptionsJSON(videoID, 0)
+	videoDetailsJSON, captionsJSON, err := tlf.fetchVideoDetailsAndCaptionsJSON(videoID, 0)
 	if err != nil {
 		return nil, err
 	}
 
-	return BuildTranscriptList(tlf.httpClient, videoID, captionsJSON)
+	return BuildTranscriptList(tlf.httpClient, videoID, videoDetailsJSON, captionsJSON)
 }
 
-func (tlf *TranscriptListFetcher) fetchCaptionsJSON(videoID string, tryNumber int) (map[string]interface{}, error) {
+func (tlf *TranscriptListFetcher) fetchVideoDetailsAndCaptionsJSON(videoID string, tryNumber int) (map[string]interface{}, map[string]interface{}, error) {
 	html, err := tlf.fetchVideoHTML(videoID)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	apiKey, err := tlf.extractInnertubeAPIKey(html, videoID)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	innertubeData, err := tlf.fetchInnertubeData(videoID, apiKey)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	captionsJSON, err := tlf.extractCaptionsJSON(innertubeData, videoID)
+	videoDetailsJSON, captionsJSON, err := tlf.extractVideoDetailsAndCaptionsJSON(innertubeData, videoID)
 	if err != nil {
 		// 检查是否是 RequestBlocked 错误，如果是且配置了代理，则重试
 		if requestBlocked, ok := err.(*RequestBlocked); ok {
@@ -422,14 +436,14 @@ func (tlf *TranscriptListFetcher) fetchCaptionsJSON(videoID string, tryNumber in
 			if tryNumber+1 < retries {
 				// 等待一小段时间后重试（触发 IP 轮换）
 				time.Sleep(time.Second * time.Duration(tryNumber+1))
-				return tlf.fetchCaptionsJSON(videoID, tryNumber+1)
+				return tlf.fetchVideoDetailsAndCaptionsJSON(videoID, tryNumber+1)
 			}
-			return nil, requestBlocked.WithProxyConfig(tlf.proxyConfig)
+			return nil, nil, requestBlocked.WithProxyConfig(tlf.proxyConfig)
 		}
-		return nil, err
+		return nil, nil, err
 	}
 
-	return captionsJSON, nil
+	return videoDetailsJSON, captionsJSON, nil
 }
 
 func (tlf *TranscriptListFetcher) extractInnertubeAPIKey(html, videoID string) (string, error) {
@@ -446,28 +460,34 @@ func (tlf *TranscriptListFetcher) extractInnertubeAPIKey(html, videoID string) (
 	return "", NewYouTubeDataUnparsable(videoID)
 }
 
-func (tlf *TranscriptListFetcher) extractCaptionsJSON(innertubeData map[string]interface{}, videoID string) (map[string]interface{}, error) {
+func (tlf *TranscriptListFetcher) extractVideoDetailsAndCaptionsJSON(innertubeData map[string]interface{}, videoID string) (map[string]interface{}, map[string]interface{}, error) {
 	// 检查视频可播放性
 	if err := tlf.assertPlayability(innertubeData, videoID); err != nil {
-		return nil, err
+		return nil, nil, err
+	}
+
+	// 提取视频详情数据
+	videoDetailsJSON, ok := innertubeData["videoDetails"].(map[string]interface{})
+	if !ok {
+		return nil, nil, NewYouTubeDataUnparsable(videoID)
 	}
 
 	// 提取字幕数据
 	captions, ok := innertubeData["captions"].(map[string]interface{})
 	if !ok {
-		return nil, NewTranscriptsDisabled(videoID)
+		return nil, nil, NewTranscriptsDisabled(videoID)
 	}
 
 	captionsJSON, ok := captions["playerCaptionsTracklistRenderer"].(map[string]interface{})
 	if !ok {
-		return nil, NewTranscriptsDisabled(videoID)
+		return nil, nil, NewTranscriptsDisabled(videoID)
 	}
 
 	if _, ok := captionsJSON["captionTracks"]; !ok {
-		return nil, NewTranscriptsDisabled(videoID)
+		return nil, nil, NewTranscriptsDisabled(videoID)
 	}
 
-	return captionsJSON, nil
+	return videoDetailsJSON, captionsJSON, nil
 }
 
 func (tlf *TranscriptListFetcher) assertPlayability(innertubeData map[string]interface{}, videoID string) error {
@@ -686,9 +706,31 @@ func (tp *TranscriptParser) removeAllHTMLTags(text string) string {
 }
 
 func (tp *TranscriptParser) removeNonFormattingHTMLTags(text string) string {
-	// 构建正则表达式：匹配所有标签，但保留格式化标签
-	tagsPattern := strings.Join(tp.formattingTags, "|")
-	pattern := fmt.Sprintf(`</?(?!/?%s\b)[^>]*\b>`, tagsPattern)
-	re := regexp.MustCompile("(?i)" + pattern)
-	return re.ReplaceAllString(text, "")
+	// 匹配所有 HTML 标签
+	tagRe := regexp.MustCompile(`(?i)</?([a-zA-Z][a-zA-Z0-9]*)\b[^>]*>`)
+
+	// 创建格式化标签的映射以便快速查找
+	formattingTagMap := make(map[string]bool)
+	for _, tag := range tp.formattingTags {
+		formattingTagMap[strings.ToLower(tag)] = true
+	}
+
+	// 替换所有非格式化标签
+	result := tagRe.ReplaceAllStringFunc(text, func(match string) string {
+		// 提取标签名
+		matches := tagRe.FindStringSubmatch(match)
+		if len(matches) < 2 {
+			return "" // 如果无法提取标签名，删除该标签
+		}
+
+		tagName := strings.ToLower(matches[1])
+
+		// 如果是格式化标签，保留；否则删除
+		if formattingTagMap[tagName] {
+			return match
+		}
+		return ""
+	})
+
+	return result
 }

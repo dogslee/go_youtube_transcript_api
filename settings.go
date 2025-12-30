@@ -4,6 +4,7 @@ package youtube_transcript_api
 const (
 	WatchURLTemplate        = "https://www.youtube.com/watch?v=%s"
 	InnertubeAPIURLTemplate = "https://www.youtube.com/youtubei/v1/player?key=%s"
+	ThumbnailURLTemplate    = "https://img.youtube.com/vi/%s/default.jpg"
 )
 
 // InnertubeContext 是调用 YouTube InnerTube API 时使用的客户端上下文
